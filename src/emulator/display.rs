@@ -1,5 +1,8 @@
-const WIDTH: usize = 64;
-const HEIGHT: usize = 32;
+pub const WIDTH: f32 = 64.0;
+pub const HEIGHT: f32 = 32.0;
+
+const PIXEL_WIDTH: usize = WIDTH as usize;
+const PIXEL_HEIGHT: usize = HEIGHT as usize;
 
 struct Character(u8, u8, u8, u8, u8);
 
@@ -23,18 +26,18 @@ const FONT: [Character; 16] = [
 ];
 
 pub struct Display {
-    pixels: [[bool; WIDTH]; HEIGHT],
+    pixels: [[bool; PIXEL_WIDTH]; PIXEL_HEIGHT],
 }
 
 impl Display {
     pub fn new() -> Self {
         Self {
-            pixels: [[false; WIDTH]; HEIGHT],
+            pixels: [[false; PIXEL_WIDTH]; PIXEL_HEIGHT],
         }
     }
     
     pub fn clear(&mut self) {
-        self.pixels.fill([false; WIDTH])
+        self.pixels.fill([false; PIXEL_WIDTH])
     }
     
     pub fn render(&self) {
