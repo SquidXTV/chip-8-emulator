@@ -1,6 +1,7 @@
 use eframe::{Frame, NativeOptions};
 use eframe::epaint::text::TextWrapMode;
 use egui::{vec2, Button, Panel, Ui, CentralPanel, Sense, Rect, CornerRadius, Color32};
+use crate::emulator::chip::Chip;
 use crate::emulator::display;
 
 const EMULATION_WIDTH: f32 = 640.0;
@@ -21,12 +22,16 @@ pub fn run_application() -> eframe::Result {
     )
 }
 
-#[derive(Default)]
-struct EmulatorApplication {}
+struct EmulatorApplication {
+    chip: Chip
+}
 
 impl EmulatorApplication {
+
     fn new(_: &eframe::CreationContext<'_>) -> Self {
-        Self::default()
+        Self {
+            chip: Chip::new()
+        }
     }
 
 }
@@ -42,7 +47,20 @@ impl eframe::App for EmulatorApplication {
                         let available_size = ui.available_size();
 
                         if ui.add_sized(available_size, Button::new("Load")).clicked() {
+                            let Some(path) = rfd::FileDialog::new().add_filter("CHIP-8 ROM", &["ch8"]).pick_file() else {
+                                return;
+                            };
 
+                            match std::fs::read(&path) {
+                                Ok(bytes) => {
+                                    // todo: error response
+                                    self.chip.load(&bytes);
+                                },
+                                Err(error) => {
+                                    // todo: error response
+                                    println!("{}", error.to_string());
+                                }
+                            }
                         }
                     });
 
@@ -51,15 +69,15 @@ impl eframe::App for EmulatorApplication {
                     .show(ui, |ui| {
                         ui.columns_const(|[play, pause, step]| {
                             if play.add_sized(play.available_size(), Button::new("Play")).clicked() {
-
+                                self.chip.run();
                             }
 
                             if pause.add_sized(pause.available_size(), Button::new("Pause")).clicked() {
-
+                                self.chip.pause();
                             }
 
                             if step.add_sized(step.available_size(), Button::new("Step Once").wrap_mode(TextWrapMode::Extend)).clicked() {
-
+                                self.chip.step();
                             }
                         });
                     });

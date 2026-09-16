@@ -35,9 +35,13 @@ impl Display {
             pixels: [[false; PIXEL_WIDTH]; PIXEL_HEIGHT],
         }
     }
+
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
     
     pub fn clear(&mut self) {
-        self.pixels.fill([false; PIXEL_WIDTH])
+        self.pixels.fill([false; PIXEL_WIDTH]);
     }
     
     pub fn render(&self) {

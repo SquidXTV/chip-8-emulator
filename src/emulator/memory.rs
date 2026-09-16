@@ -22,6 +22,11 @@ impl Memory {
         }
     }
 
+    pub fn reset(&mut self) {
+        *self = Self::from_size(self.data.len());
+    }
+
+
     // addresses are actually just referencing 12 bits (4 kB), but still stored in 16 bit references
     pub fn read(&self, address: u16) -> Result<&u8, MemoryError> {
         self.data
@@ -52,6 +57,21 @@ impl Memory {
         };
 
         *byte = value;
+        Ok(())
+    }
+
+    pub fn write_slice(&mut self, address: u16, bytes: &[u8]) -> Result<(), MemoryError> {
+        let start = address as usize;
+        let Some(end) = start.checked_add(bytes.len()) else {
+            return Err(RangeOutOfBounds { address, size: bytes.len() });
+        };
+
+        let Some(destination) = self.data.get_mut(start..end) else {
+            return Err(RangeOutOfBounds { address, size: bytes.len() });
+        };
+
+        destination.copy_from_slice(bytes);
+
         Ok(())
     }
 }
