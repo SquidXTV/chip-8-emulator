@@ -11,8 +11,7 @@ pub struct Chip {
     display: Display,
     delay_timer: Timer,
     sound_timer: Timer,
-    keypad: Keypad,
-    running: bool
+    keypad: Keypad
 }
 
 impl Chip {
@@ -23,8 +22,7 @@ impl Chip {
             display: Display::new(),
             delay_timer: Timer::new(),
             sound_timer: Timer::new(),
-            keypad: Keypad::new(),
-            running: false
+            keypad: Keypad::new()
         }
     }
 
@@ -38,23 +36,6 @@ impl Chip {
             self.delay_timer.reset();
             self.sound_timer.reset();
         })
-    }
-
-    pub fn run(&mut self) -> Result<(), MemoryError> {
-        self.running = true;
-
-        while self.running {
-            if let Err(error) = self.step() {
-                return Err(error);
-            }
-        }
-
-        self.running = false;
-        Ok(())
-    }
-
-    pub fn pause(&mut self) {
-        self.running = false;
     }
 
     pub fn step(&mut self) -> Result<(), MemoryError> {
