@@ -16,7 +16,7 @@ fn main() {
     });
 
     // run egui
-    let _ = ui::run_application(&command_sender, frame_receiver);
+    let _ = ui::run_application(command_sender.clone(), frame_receiver);
 
     let _ = command_sender.send(EmulationCommand::Exit);
     let _ = emulation.join();

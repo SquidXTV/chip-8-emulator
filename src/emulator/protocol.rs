@@ -1,6 +1,6 @@
 pub enum EmulationCommand {
     Load {
-        bytes: [u8]
+        bytes: Vec<u8>
     },
     Play,
     Pause,

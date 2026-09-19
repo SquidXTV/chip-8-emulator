@@ -2,12 +2,13 @@ use std::sync::mpsc::{Receiver, Sender};
 use eframe::{Frame, NativeOptions};
 use eframe::epaint::text::TextWrapMode;
 use egui::{vec2, Button, Panel, Ui, CentralPanel, Sense, Rect, CornerRadius, Color32};
+use crate::emulator::display;
 use crate::emulator::protocol::{EmulationCommand, EmulationFrame};
 
 const EMULATION_WIDTH: f32 = 640.0;
 const EMULATION_HEIGHT: f32 = 320.0;
 
-pub fn run_application(commands: &Sender<EmulationCommand>, frames: Receiver<EmulationFrame>) -> eframe::Result {
+pub fn run_application(commands: Sender<EmulationCommand>, frames: Receiver<EmulationFrame>) -> eframe::Result {
     let options = NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([EMULATION_WIDTH, EMULATION_HEIGHT])
@@ -18,7 +19,7 @@ pub fn run_application(commands: &Sender<EmulationCommand>, frames: Receiver<Emu
     eframe::run_native(
         "CHIP-8 Emulator",
         options,
-        Box::new(|cc| Ok(Box::new(EmulatorApplication::new(cc)))),
+        Box::new(|cc| Ok(Box::new(EmulatorApplication::new(commands, frames)))),
     )
 }
 
@@ -56,7 +57,7 @@ impl eframe::App for EmulatorApplication {
                             match std::fs::read(&path) {
                                 Ok(bytes) => {
                                     // todo: error response
-                                    let _ = self.commands.send(EmulationCommand::Load { bytes: bytes });
+                                    let _ = self.commands.send(EmulationCommand::Load { bytes });
                                 },
                                 Err(error) => {
                                     // todo: error response
@@ -71,15 +72,15 @@ impl eframe::App for EmulatorApplication {
                     .show(ui, |ui| {
                         ui.columns_const(|[play, pause, step]| {
                             if play.add_sized(play.available_size(), Button::new("Play")).clicked() {
-                                self.commands.send(EmulationCommand::Play);
+                                let _ = self.commands.send(EmulationCommand::Play);
                             }
 
                             if pause.add_sized(pause.available_size(), Button::new("Pause")).clicked() {
-                                self.commands.send(EmulationCommand::Pause);
+                                let _ = self.commands.send(EmulationCommand::Pause);
                             }
 
                             if step.add_sized(step.available_size(), Button::new("Step Once").wrap_mode(TextWrapMode::Extend)).clicked() {
-                                self.commands.send(EmulationCommand::Step);
+                                let _ = self.commands.send(EmulationCommand::Step);
                             }
                         });
                     });

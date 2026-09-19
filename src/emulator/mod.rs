@@ -6,10 +6,10 @@ use crate::emulator::protocol::{EmulationCommand, EmulationFrame};
 
 mod cpu;
 mod memory;
-mod display;
 mod timer;
 mod chip;
 mod keypad;
+pub mod display;
 pub mod protocol;
 
 pub fn run(commands: Receiver<EmulationCommand>, frames: SyncSender<EmulationFrame>) {
@@ -35,12 +35,12 @@ pub fn run(commands: Receiver<EmulationCommand>, frames: SyncSender<EmulationFra
                 Ok(EmulationCommand::Exit) => {
                     return;
                 },
+                Err(TryRecvError::Disconnected) => {
+                    return;
+                },
                 Err(TryRecvError::Empty) => {
                     break;
                 },
-                Err(TryRecvError::Disconnected) => {
-                    return;
-                }
             }
         }
 
@@ -54,6 +54,6 @@ pub fn run(commands: Receiver<EmulationCommand>, frames: SyncSender<EmulationFra
             // });
         }
 
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(250));
     }
 }

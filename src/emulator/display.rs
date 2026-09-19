@@ -1,8 +1,9 @@
-pub const WIDTH: f32 = 64.0;
-pub const HEIGHT: f32 = 32.0;
+pub const PIXEL_WIDTH: usize = 64;
+pub const PIXEL_HEIGHT: usize = 32;
 
-const PIXEL_WIDTH: usize = WIDTH as usize;
-const PIXEL_HEIGHT: usize = HEIGHT as usize;
+pub const WIDTH: f32 = PIXEL_WIDTH as f32;
+pub const HEIGHT: f32 = PIXEL_HEIGHT as f32;
+
 
 struct Character(u8, u8, u8, u8, u8);
 
@@ -42,10 +43,12 @@ impl Display {
     
     pub fn clear(&mut self) {
         self.pixels.fill([false; PIXEL_WIDTH]);
+        println!("called cleared")
     }
     
-    pub fn render(&self) {
-        
+    pub fn draw_sprite(&mut self, x: usize, y: usize, sprite: &[u8]) {
+        let x = x % PIXEL_WIDTH;
+        let y = y % PIXEL_HEIGHT;
     }
     
 }
