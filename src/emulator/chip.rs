@@ -1,8 +1,9 @@
-use egui::debug_text::print;
+use std::sync::{Arc, Mutex};
 use crate::emulator::cpu::{CPU, PROGRAM_START_ADDRESS};
 use crate::emulator::display::Display;
 use crate::emulator::keypad::Keypad;
 use crate::emulator::memory::{Memory, MemoryError};
+use crate::emulator::protocol::EmulationFrame;
 use crate::emulator::timer::Timer;
 
 pub struct Chip {
@@ -11,18 +12,20 @@ pub struct Chip {
     display: Display,
     delay_timer: Timer,
     sound_timer: Timer,
-    keypad: Keypad
+    keypad: Keypad,
+    current_frame: Arc<Mutex<EmulationFrame>>
 }
 
 impl Chip {
-    pub fn new() -> Self {
+    pub fn new(current_frame: Arc<Mutex<EmulationFrame>>) -> Self {
         Self {
             cpu: CPU::new(),
             memory: Memory::new(),
             display: Display::new(),
             delay_timer: Timer::new(),
             sound_timer: Timer::new(),
-            keypad: Keypad::new()
+            keypad: Keypad::new(),
+            current_frame
         }
     }
 
@@ -52,7 +55,10 @@ impl Chip {
 
     fn execute(&mut self, instruction: u16) {
         match instruction {
-            0x00E0 => self.display.clear(),
+            0x00E0 => {
+                self.display.clear();
+                self.send_display();
+            },
             0x1000..=0x1FFF => self.cpu.jump_to(instruction & 0x0FFF),
             0x2000..=0x2FFF => self.cpu.jump_to_subroutine(instruction & 0x0FFF),
             0x00EE => self.cpu.return_from_subroutine(),
@@ -68,12 +74,22 @@ impl Chip {
                 let sprite = self.memory.read_slice(self.cpu.index_register(), usize::from(Self::extract_n(instruction)));
 
                 if let Ok(sprite) = sprite {
-                    self.display.draw_sprite(x, y, sprite);
+                    let updated = self.display.draw_sprite(usize::from(x), usize::from(y), sprite);
+
+                    if updated {
+                        self.cpu.set_register(0xF, 0x1);
+                        self.send_display();
+                    } else {
+                        self.cpu.set_register(0xF, 0x0);
+                    }
                 }
 
             },
             other => println!("Not found instruction: 0x{:04X}", other),
         }
+
+        // 1111 at (0C, 08) = (12, 8)
+        println!("Executed instruction: 0x{:04X}", instruction);
     }
 
     // opcode: The first nibble. Used to divide instructions into broad categories
@@ -82,10 +98,6 @@ impl Chip {
     // N: The fourth nibble. A 4-bit number.
     // NN: The second byte (third and fourth nibbles). An 8-bit immediate number.
     // NNN: The second, third and fourth nibbles. A 12-bit immediate memory address.
-    fn extract_opcode(instruction: u16) -> u8 {
-        (instruction >> 12) as u8
-    }
-
     fn extract_x(instruction: u16) -> u8 {
         ((instruction & 0x0F00) >> 8) as u8
     }
@@ -104,6 +116,14 @@ impl Chip {
 
     fn extract_nnn(instruction: u16) -> u16 {
         instruction & 0x0FFF
+    }
+
+    fn send_display(&self) {
+        // todo: handle error state
+        let mut frame = self.current_frame.lock().expect("...");
+        *frame = EmulationFrame {
+            pixels: self.display.pixels()
+        };
     }
 
 }

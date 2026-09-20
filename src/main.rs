@@ -1,4 +1,4 @@
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use crate::emulator::protocol::{EmulationCommand, EmulationFrame};
 
@@ -9,14 +9,16 @@ pub mod ui;
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let (command_sender, command_receiver) = mpsc::channel::<EmulationCommand>();
-    let (frame_sender, frame_receiver) = mpsc::sync_channel::<EmulationFrame>(1);
+
+    let current_frame: Arc<Mutex<EmulationFrame>> = Arc::new(Mutex::new(EmulationFrame {pixels: [[false; 64]; 32]}));
+    let emulation_frame = Arc::clone(&current_frame);
 
     let emulation = thread::spawn(move || {
-        emulator::run(command_receiver, frame_sender);
+        emulator::run(command_receiver, emulation_frame);
     });
 
     // run egui
-    let _ = ui::run_application(command_sender.clone(), frame_receiver);
+    let _ = ui::run_application(command_sender.clone(), current_frame);
 
     let _ = command_sender.send(EmulationCommand::Exit);
     let _ = emulation.join();

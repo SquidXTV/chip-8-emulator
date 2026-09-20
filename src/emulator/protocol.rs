@@ -1,3 +1,5 @@
+use crate::emulator::display::{PIXEL_HEIGHT, PIXEL_WIDTH};
+
 pub enum EmulationCommand {
     Load {
         bytes: Vec<u8>
@@ -9,5 +11,5 @@ pub enum EmulationCommand {
 }
 
 pub struct EmulationFrame {
-    pub pixels: Vec<bool>
+    pub pixels: [[bool; PIXEL_WIDTH]; PIXEL_HEIGHT]
 }

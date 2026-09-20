@@ -32,7 +32,7 @@ impl CPU {
     }
 
     pub fn at_register(&self, register: u8) -> u8 {
-        self.registers[register & 0x0F]
+        self.registers[usize::from(register & 0x0F)]
     }
 
     pub fn next_instruction(&mut self) {
@@ -50,24 +50,25 @@ impl CPU {
 
     pub fn return_from_subroutine(&mut self) {
         // todo: handle error properly
-        self.jump_to(self.stack.pop().expect("Returning from subroutine only works when calling a subroutine before"));
+        let instruction_pre_subroutine = self.stack.pop().expect("Returning from subroutine only works when calling a subroutine before");
+        self.jump_to(instruction_pre_subroutine);
     }
 
     pub fn skip_if_register_equals_value(&mut self, register: u8, value: u8) {
-        if self.registers[register & 0x0F] == value {
+        if self.registers[usize::from(register & 0x0F)] == value {
             self.next_instruction();
         }
     }
 
     // todo: add proper bounds check and error if register index is not in u4
     pub fn skip_if_register_not_equals_value(&mut self, register: u8, value: u8) {
-        if self.registers[register & 0x0F] != value {
+        if self.registers[usize::from(register & 0x0F)] != value {
             self.next_instruction();
         }
     }
 
     pub fn set_register(&mut self, register: u8, value: u8) {
-        self.registers[register & 0x0F] = value;
+        self.registers[usize::from(register & 0x0F)] = value;
     }
 
     pub fn set_index_register(&mut self, value: u16) {
@@ -75,7 +76,7 @@ impl CPU {
     }
 
     pub fn add_to_register(&mut self, register: u8, value: u8) {
-        self.registers[register & 0x0F] += value; // no carry flag set if overflow
+        self.registers[usize::from(register & 0x0F)] += value; // no carry flag set if overflow
     }
     
 }

@@ -1,14 +1,16 @@
-use std::sync::mpsc::{Receiver, Sender};
-use eframe::{Frame, NativeOptions};
-use eframe::epaint::text::TextWrapMode;
-use egui::{vec2, Button, Panel, Ui, CentralPanel, Sense, Rect, CornerRadius, Color32};
 use crate::emulator::display;
 use crate::emulator::protocol::{EmulationCommand, EmulationFrame};
+use eframe::epaint::text::TextWrapMode;
+use eframe::{Frame, NativeOptions};
+use egui::{Button, CentralPanel, Color32, CornerRadius, Panel, Rect, Sense, Ui, vec2};
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 const EMULATION_WIDTH: f32 = 640.0;
 const EMULATION_HEIGHT: f32 = 320.0;
 
-pub fn run_application(commands: Sender<EmulationCommand>, frames: Receiver<EmulationFrame>) -> eframe::Result {
+pub fn run_application(commands: Sender<EmulationCommand>, current_frame: Arc<Mutex<EmulationFrame>>) -> eframe::Result {
     let options = NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([EMULATION_WIDTH, EMULATION_HEIGHT])
@@ -19,21 +21,21 @@ pub fn run_application(commands: Sender<EmulationCommand>, frames: Receiver<Emul
     eframe::run_native(
         "CHIP-8 Emulator",
         options,
-        Box::new(|cc| Ok(Box::new(EmulatorApplication::new(commands, frames)))),
+        Box::new(|cc| Ok(Box::new(EmulatorApplication::new(commands, current_frame)))),
     )
 }
 
 struct EmulatorApplication {
     commands: Sender<EmulationCommand>,
-    frames: Receiver<EmulationFrame>
+    current_frame: Arc<Mutex<EmulationFrame>>
 }
 
 impl EmulatorApplication {
 
-    fn new(commands: Sender<EmulationCommand>, frames: Receiver<EmulationFrame>) -> Self {
+    fn new(commands: Sender<EmulationCommand>, current_frame: Arc<Mutex<EmulationFrame>>) -> Self {
         Self {
             commands,
-            frames
+            current_frame
         }
     }
 
@@ -86,6 +88,11 @@ impl eframe::App for EmulatorApplication {
                     });
             });
 
+        if let Ok(frame) = self.current_frame.lock() {
+
+        }
+
+
         CentralPanel::default()
             .show(ui, |ui| {
                 let available_size = ui.available_size();
@@ -94,11 +101,43 @@ impl eframe::App for EmulatorApplication {
                 let area = response.rect;
 
                 let scale = (area.width() / display::WIDTH).min(area.height() / display::HEIGHT);
-                let emulation_size = vec2(display::WIDTH * scale, display::HEIGHT * scale);
+
+                let emulation_size = vec2(
+                    display::WIDTH * scale,
+                    display::HEIGHT * scale
+                );
+
                 let emulation_rect = Rect::from_center_size(area.center(), emulation_size);
 
-                painter.rect_filled(emulation_rect, CornerRadius::ZERO, Color32::BLACK);
+                painter.rect_filled(
+                    emulation_rect,
+                    CornerRadius::ZERO,
+                    Color32::BLACK
+                );
+
+                let Ok(frame) = self.current_frame.lock() else {
+                    // todo: handle error case
+                    return;
+                };
+
+                for y in 0..display::PIXEL_HEIGHT {
+                    for x in 0..display::PIXEL_WIDTH {
+                        if !frame.pixels[y][x] {
+                            continue;
+                        }
+
+                        let pixel_min = emulation_rect.min + vec2(x as f32 * scale, y as f32 * scale);
+                        let pixel_rect = Rect::from_min_size(pixel_min, vec2(scale, scale));
+
+                        painter.rect_filled(pixel_rect, CornerRadius::ZERO, Color32::WHITE);
+                    }
+                }
+
             });
 
+        ui.request_repaint_after(Duration::from_millis(16));
     }
+
+
+
 }
