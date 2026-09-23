@@ -11,4 +11,13 @@ impl Timer {
     pub fn reset(&mut self) {
         *self = Self::new();
     }
+
+    pub fn counter(&self) -> u8 {
+        self.counter
+    }
+
+    pub fn set_counter(&mut self, value: u8) {
+        self.counter = value;
+    }
+
 }
